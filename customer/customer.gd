@@ -2,13 +2,15 @@ extends TextureRect
 class_name Customer
 
 var root: Game
-var ps_bar :ProgressBar
+var ps_bar: ProgressBar
+var order_panel: Control
 
 var order = []
 var order_timer = 0
 var order_time = 20
 var order_time_buffer = 0.1 # 訂單緩衝時間比例
 var speed = 300
+var is_going = 0 # 1 進入 -1 離開
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -27,8 +29,8 @@ func _process(delta: float) -> void:
 		position = position.move_toward(get_pos(), delta * speed)
 
 func setup():
-	root = get_node("/root/Root")
 	ps_bar = $ProgressBar
+	order_panel = $"要求"
 	ps_bar.value = 0
 
 func get_pos() -> Vector2:
@@ -39,16 +41,19 @@ func get_pos() -> Vector2:
 		(root.show_area.size.x - size.x)/2.0 + (width * ((count-1)/2.0 - index)),
 		(root.show_area.size.y - size.y)/2.0
 	)
+	if is_going != 0:
+		pos.x = root.show_area.size.x * is_going
+		pos.y -= 100
 	return pos
 
 func create_order():
 	var count = randi_range(1, 3)
-	var items = data.get_order_items()
+	var items = data.get_enabled_items()
 	items.shuffle()
 	var item_size = Vector2(50, 50)
 	var offset = 10
-	$"要求".size = Vector2(item_size.x, (item_size.y + offset) * count)
-	$"要求".position.y = self.size.y - $"要求".size.y
+	order_panel.size = Vector2(item_size.x, (item_size.y + offset) * count)
+	order_panel.position.y = self.size.y - order_panel.size.y
 	for i in count:
 		order.append(items[i])
 		var texture_rect := TextureRect.new()
@@ -59,7 +64,7 @@ func create_order():
 			0,
 			(item_size.y + offset) * i
 		)
-		$"要求".add_child(texture_rect)
+		order_panel.add_child(texture_rect)
 
 func send_order(items: Array):
 	if items.size() != order.size():
@@ -76,14 +81,35 @@ func send_order(items: Array):
 func wrong_order():
 	print("送錯")
 	root.remove_customer(self)
+	going(-1)
 
 func correct_order():
 	print("送對")
 	root.remove_customer(self)
+	going(1)
 
 func timeout():
 	print("超時")
 	root.remove_customer(self)
+	going(-1)
+
+func going(in_or_out: int):
+	if is_going != 0:
+		return
+	is_going = in_or_out
+	ps_bar.visible = false
+	order_panel.visible = false
+	speed *= 2
+	move_to_bottom()
+	# 倒數後刪除
+	await get_tree().create_timer(3.0).timeout
+	queue_free()
+
+# 不知為何原生失效，重寫一個
+func move_to_bottom():
+	for cs: Customer in root.show_area.get_children():
+		if cs.is_going == 0:
+			cs.move_to_front()
 
 # 有東西放上來時
 func _drop_data(_at_position: Vector2, drag_item: Variant) -> void:

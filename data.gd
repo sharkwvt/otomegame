@@ -11,7 +11,9 @@ enum item {
 	托盤
 }
 
-func get_order_items() -> Array:
+var now_level = 1
+
+func get_enabled_items() -> Array:
 	var items = []
 	for i in data.item_strs.size()-1:
 		items.append(i)

@@ -19,7 +19,7 @@ func refresh_items():
 	
 	create_items(self_img)
 
-# 創建物件
+# 創建已放置物件
 func create_items(node: Node):
 	var offset = 10
 	for i in items.size():
@@ -35,14 +35,8 @@ func create_items(node: Node):
 # 覆寫拖曳
 func _get_drag_data(_at_position: Vector2) -> Variant:
 	self_img.visible = false
-	
-	var node := Control.new()
-	var texture_rect := TextureRect.new()
-	texture_rect.texture = load(data.item_img_path % data.item_strs[self_item])
-	texture_rect.size = Vector2(100, 100)
-	texture_rect.position = Vector2(-texture_rect.size.x/2.0, -texture_rect.size.y/2.0)
-	node.add_child(texture_rect)
-	create_items(texture_rect)
+	var node := drag_preview()
+	create_items(node)
 	set_drag_preview(node)
 	return self
 
