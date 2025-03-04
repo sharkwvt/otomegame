@@ -2,27 +2,34 @@ extends TextureRect
 class_name Customer
 
 var root: Game
+var ps_bar :ProgressBar
 
 var order = []
 var order_timer = 0
 var order_time = 20
-var order_time_buffer = 0.1
+var order_time_buffer = 0.1 # 訂單緩衝時間比例
 var speed = 300
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
-	root = get_node("/root/Root")
+	setup()
 	create_order()
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta: float) -> void:
 	order_timer += delta
+	ps_bar.value = (order_timer - order_time * order_time_buffer) / order_time
 	if order_timer >= order_time * (order_time_buffer + 1):
 		timeout()
 	
 	# 移動到指定點
 	if position.distance_to(get_pos()) > 0.1:
 		position = position.move_toward(get_pos(), delta * speed)
+
+func setup():
+	root = get_node("/root/Root")
+	ps_bar = $ProgressBar
+	ps_bar.value = 0
 
 func get_pos() -> Vector2:
 	var width = size.x + 100
